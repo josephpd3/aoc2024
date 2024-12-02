@@ -1,2 +1,5 @@
 # `target` directory under any other directory
 **/target/
+
+# VS Code specific settings
+.vscode/
