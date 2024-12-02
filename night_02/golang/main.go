@@ -93,22 +93,55 @@ func isSafe(report []int) bool {
 	return true
 }
 
-// isSafeWithDroppingOne is brute force bullshit but it works
-// would not scale at ALL though if these reports were larger
-func isSafeWithDroppingOne(report []int) bool {
-	for i := 0; i < len(report); i++ {
-		firstHalf := make([]int, len(report)-(len(report)-i))
-		secondHalf := make([]int, len(report)-i-1)
-
-		// Have to do this to avoid changing backing array
-		copy(firstHalf, report[:i])
-		copy(secondHalf, report[i+1:])
-
-		if isSafe(append(firstHalf, secondHalf...)) {
-			return true
-		}
+func isSafelyMonotonic(report []int, freebies int, direction int) bool {
+	if len(report) == 1 {
+		return true
 	}
-	return false
+
+	freebiesUsed := 0
+
+	var comparator func(int, int) bool
+
+	if direction > 0 {
+		comparator = greaterThan
+	} else if direction < 0 {
+		comparator = lessThan
+	} else {
+		panic("direction must be non-zero")
+	}
+
+	lastNum := report[0]
+
+	for _, num := range report[1:] {
+		if !comparator(num, lastNum) || absDifference(lastNum, num) > 3 || lastNum == num {
+			if freebiesUsed < freebies {
+				freebiesUsed++
+				continue
+			} else {
+				return false
+			}
+		}
+		lastNum = num
+	}
+
+	return true
+}
+
+// Okay here's where it gets weird and I am making assumptions
+//
+// The report is safe if either:
+// 1. The report minus the first entry is safe with no modifications
+// 2. The report is safe minus one other entry or minus no entries
+//
+// From there you can just check if the report is safely monotonic in either direction
+func isSafeWithDroppingOne(report []int) bool {
+	reportWithoutFirst := make([]int, len(report)-1)
+	copy(reportWithoutFirst, report[1:])
+
+	safeWithoutFirst := (
+		isSafelyMonotonic(reportWithoutFirst, 0, 1) || isSafelyMonotonic(reportWithoutFirst, 0, -1))
+
+	return safeWithoutFirst || isSafelyMonotonic(report, 1, 1) || isSafelyMonotonic(report, 1, -1)
 }
 
 func main() {
@@ -125,7 +158,7 @@ func main() {
 		}
 	}
 
-	fmt.Println("Total safe:", totalSafe)
+	fmt.Println("Total safe:", totalSafe) // should be 390
 
 	totalSafeWithDroppingOne := 0
 
@@ -135,6 +168,7 @@ func main() {
 		}
 	}
 
+	// should be 439
 	fmt.Println("Total safe with dropping one:", totalSafeWithDroppingOne)
 
 	// first problem Test cases
